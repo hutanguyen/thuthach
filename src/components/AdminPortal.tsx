@@ -26,6 +26,7 @@ interface Props {
   onToggleTheme?: () => void;
   timerConfig?: QuizTimerConfig;
   onSaveTimerConfig?: (config: QuizTimerConfig) => void;
+  onSyncResults?: () => Promise<void>;
 }
 
 export const AdminPortal: React.FC<Props> = ({
@@ -41,6 +42,7 @@ export const AdminPortal: React.FC<Props> = ({
   onToggleTheme,
   timerConfig,
   onSaveTimerConfig,
+  onSyncResults,
 }) => {
   const [adminTab, setAdminTab] = useState<'questions' | 'summary'>('questions');
   const isDark = theme === 'dark';
@@ -200,6 +202,7 @@ export const AdminPortal: React.FC<Props> = ({
             onClearAll={onClearAllResults}
             onDeleteSingle={onDeleteSingleResult}
             theme={theme}
+            onSyncResults={onSyncResults}
           />
         )}
       </div>

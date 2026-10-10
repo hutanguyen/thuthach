@@ -14,6 +14,13 @@ import { AdminPortal } from './components/AdminPortal';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SoundToggle } from './components/SoundToggle';
 import { soundEngine } from './utils/soundEngine';
+import { 
+  savePlayerLoginToSupabase, 
+  saveStudentResultToSupabase, 
+  fetchStudentResultsFromSupabase, 
+  deleteStudentResultFromSupabase, 
+  clearAllStudentResultsFromSupabase 
+} from './utils/supabaseClient';
 
 const STORAGE_KEY = 'quiz_student_results';
 const QUESTIONS_STORAGE_KEY = 'quiz_custom_questions';
@@ -157,6 +164,11 @@ export default function App() {
       setAnswers({});
       setQuizStartedAt(Date.now());
       setState('quiz');
+
+      // Tự động lưu thông tin đăng nhập của người chơi vào Supabase
+      savePlayerLoginToSupabase(studentInfo).catch(err => {
+        console.warn('Lỗi ghi thông tin người chơi lên Supabase:', err);
+      });
     }
   };
 
@@ -210,15 +222,47 @@ export default function App() {
     setResults(prev => [newResult, ...prev]);
     setCurrentResult(newResult);
     setState('result');
+
+    // Tự động lưu kết quả sau khi hoàn thành thử thách vào Supabase
+    saveStudentResultToSupabase(newResult).catch(err => {
+      console.warn('Lỗi ghi kết quả bài làm lên Supabase:', err);
+    });
   };
+
+  // Đồng bộ kết quả từ Supabase về ứng dụng
+  const handleSyncSupabaseResults = async () => {
+    const { results: remoteResults, error } = await fetchStudentResultsFromSupabase();
+    if (Array.isArray(remoteResults)) {
+      setResults(prev => {
+        const remoteMap = new Map(remoteResults.map(r => [r.id, r]));
+        const combined = [...remoteResults];
+        prev.forEach(p => {
+          if (!remoteMap.has(p.id)) {
+            combined.push(p);
+          }
+        });
+        return combined;
+      });
+    }
+    if (error) {
+      throw new Error(error);
+    }
+  };
+
+  // Tự động đồng bộ kết quả từ Supabase khi mở ứng dụng
+  useEffect(() => {
+    handleSyncSupabaseResults().catch(() => {});
+  }, []);
 
   const handleClearAllResults = () => {
     setResults([]);
     localStorage.removeItem(STORAGE_KEY);
+    clearAllStudentResultsFromSupabase().catch(console.error);
   };
 
   const handleDeleteSingleResult = (id: string) => {
     setResults(prev => prev.filter(item => item.id !== id));
+    deleteStudentResultFromSupabase(id).catch(console.error);
   };
 
   const handleRestart = () => {
@@ -309,6 +353,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             timerConfig={timerConfig}
             onSaveTimerConfig={handleSaveTimerConfig}
+            onSyncResults={handleSyncSupabaseResults}
           />
         )}
 

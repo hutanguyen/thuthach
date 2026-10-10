@@ -10,10 +10,16 @@ import {
   CheckCircle2, 
   Filter,
   Download,
-  AlertTriangle
+  AlertTriangle,
+  Cloud,
+  RefreshCw,
+  Copy,
+  Check,
+  Database
 } from 'lucide-react';
 import { StudentResult } from '../types';
 import { exportToExcel, exportSingleResultToExcel } from '../utils/excelExport';
+import { SUPABASE_SETUP_SQL, SUPABASE_URL } from '../utils/supabaseClient';
 
 interface Props {
   results: StudentResult[];
@@ -21,6 +27,7 @@ interface Props {
   onClearAll: () => void;
   onDeleteSingle: (id: string) => void;
   theme?: 'light' | 'dark';
+  onSyncResults?: () => Promise<void>;
 }
 
 export const SummaryDashboard: React.FC<Props> = ({
@@ -29,11 +36,40 @@ export const SummaryDashboard: React.FC<Props> = ({
   onClearAll,
   onDeleteSingle,
   theme = 'light',
+  onSyncResults,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showSqlModal, setShowSqlModal] = useState(false);
+  const [hasCopiedSql, setHasCopiedSql] = useState(false);
   const isDark = theme === 'dark';
+
+  const handleTriggerSync = async () => {
+    if (!onSyncResults) return;
+    setIsSyncing(true);
+    setSyncNotice(null);
+    try {
+      await onSyncResults();
+      setSyncNotice({ type: 'success', message: 'Đã đồng bộ kết quả mới nhất từ Supabase thành công!' });
+      setTimeout(() => setSyncNotice(null), 3500);
+    } catch (err: any) {
+      setSyncNotice({
+        type: 'error',
+        message: err?.message || 'Chưa thể tải dữ liệu từ Supabase. Vui lòng kiểm tra bảng student_results.',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SUPABASE_SETUP_SQL);
+    setHasCopiedSql(true);
+    setTimeout(() => setHasCopiedSql(false), 3000);
+  };
 
   // Extract unique classes for filter
   const uniqueClasses = useMemo(() => {
@@ -93,24 +129,68 @@ export const SummaryDashboard: React.FC<Props> = ({
         isDark ? 'border-slate-800' : 'border-slate-100'
       }`}>
         <div>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2">
-            <FileSpreadsheet className={isDark ? 'text-cyan-400' : 'text-emerald-600'} size={30} />
-            Tổng Hợp Kết Quả
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2">
+              <FileSpreadsheet className={isDark ? 'text-cyan-400' : 'text-emerald-600'} size={30} />
+              Tổng Hợp Kết Quả
+            </h1>
+            <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black border ${
+              isDark ? 'bg-cyan-950/70 text-cyan-300 border-cyan-800' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            }`}>
+              <Cloud size={12} className="text-emerald-500 animate-pulse" />
+              Supabase Cloud
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 font-medium mt-1">
+            Dữ liệu tự động đồng bộ trên đám mây Supabase
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
+          {onSyncResults && (
+            <button
+              type="button"
+              onClick={handleTriggerSync}
+              disabled={isSyncing}
+              className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                isDark
+                  ? 'border-cyan-800/70 bg-slate-800/90 hover:bg-slate-700 text-cyan-300'
+                  : 'border-emerald-200 bg-white hover:bg-emerald-50 text-emerald-700'
+              } disabled:opacity-50`}
+              title="Đồng bộ lại kết quả từ Supabase"
+            >
+              <RefreshCw size={14} className={isSyncing ? 'animate-spin text-cyan-400' : ''} />
+              <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ Cloud'}</span>
+            </button>
+          )}
+
           <button
+            type="button"
+            onClick={() => setShowSqlModal(true)}
+            className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+              isDark
+                ? 'border-slate-700 bg-slate-800/60 hover:bg-slate-750 text-slate-300'
+                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+            }`}
+            title="Xem mã lệnh SQL cài đặt Supabase"
+          >
+            <Database size={14} className="text-amber-500" />
+            <span>Mã SQL</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleExportAll}
             disabled={filteredResults.length === 0}
             className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-400/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
-            <Download size={18} />
-            <span>Xuất file Excel ({filteredResults.length})</span>
+            <Download size={16} />
+            <span>Xuất Excel ({filteredResults.length})</span>
           </button>
 
           {results.length > 0 && (
             <button
+              type="button"
               onClick={() => setShowConfirmClear(true)}
               className="p-2.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl transition-colors cursor-pointer"
               title="Xóa toàn bộ kết quả"
@@ -120,6 +200,33 @@ export const SummaryDashboard: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      {/* Sync Notification Banner */}
+      {syncNotice && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`mt-4 p-3.5 rounded-2xl border text-xs font-bold flex items-center justify-between gap-2.5 shadow-sm ${
+            syncNotice.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {syncNotice.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+            <span>{syncNotice.message}</span>
+          </div>
+          {syncNotice.type === 'error' && (
+            <button
+              type="button"
+              onClick={() => setShowSqlModal(true)}
+              className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-black underline cursor-pointer"
+            >
+              Xem mã tạo bảng SQL
+            </button>
+          )}
+        </motion.div>
+      )}
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6">
@@ -360,6 +467,77 @@ export const SummaryDashboard: React.FC<Props> = ({
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs cursor-pointer shadow-md shadow-rose-600/30"
               >
                 Xác nhận xóa tất cả
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Cài Đặt SQL Supabase */}
+      {showSqlModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`rounded-3xl p-6 max-w-2xl w-full shadow-2xl border max-h-[85vh] flex flex-col ${
+              isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                  <Database size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Cài Đặt Bảng Supabase</h3>
+                  <p className="text-xs text-slate-400">
+                    Chạy mã lệnh SQL này tại mục <b>SQL Editor</b> trên Supabase Dashboard
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold px-2 py-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="my-4 flex-1 overflow-auto">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-500">Mã SQL tạo 2 bảng `player_logins` & `student_results`:</span>
+                <button
+                  type="button"
+                  onClick={handleCopySql}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  {hasCopiedSql ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{hasCopiedSql ? 'Đã sao chép!' : 'Sao chép mã SQL'}</span>
+                </button>
+              </div>
+
+              <pre className="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 text-xs font-mono overflow-x-auto border border-slate-800 leading-relaxed select-all">
+                {SUPABASE_SETUP_SQL}
+              </pre>
+
+              <div className="mt-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-[11px] text-cyan-700 dark:text-cyan-300">
+                💡 <b>Các bước thực hiện nhanh:</b>
+                <ol className="list-decimal list-inside mt-1 space-y-0.5">
+                  <li>Vào Supabase Dashboard của dự án của bạn (<span className="font-mono text-emerald-500">{SUPABASE_URL}</span>)</li>
+                  <li>Chọn mục <b>SQL Editor</b> ở thanh menu bên trái</li>
+                  <li>Nhấn <b>New Query</b>, dán mã SQL ở trên vào và bấm <b>Run</b></li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Đóng
               </button>
             </div>
           </motion.div>
