@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, GraduationCap, ChevronRight, Sparkles, ShieldCheck, Hash, Bot } from 'lucide-react';
+import { User, GraduationCap, ChevronRight, Sparkles, ShieldCheck, Hash } from 'lucide-react';
 import { StudentInfo, QuizTimerConfig } from '../types';
 
 interface Props {
@@ -109,7 +109,7 @@ export const StudentRegistration: React.FC<Props> = ({
           >
             {ORBIT_STARS.map((star, i) => {
               const angleDeg = (i * 360) / 7;
-              const radius = 56; // Bán kính quỹ đạo quanh logo
+              const radius = 62; // Bán kính quỹ đạo quanh logo
               const x = radius * Math.cos((angleDeg * Math.PI) / 180);
               const y = radius * Math.sin((angleDeg * Math.PI) / 180);
               return (
@@ -155,17 +155,22 @@ export const StudentRegistration: React.FC<Props> = ({
             })}
           </motion.div>
 
-          {/* Logo Robot chính giữa */}
+          {/* Logo Trường Tiểu Học Lý Cảnh Hớn chính giữa */}
           <motion.div
             animate={{ y: [0, -5, 0] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
-            className={`p-4 rounded-3xl shadow-xl flex items-center justify-center border-2 relative z-10 ${
+            className={`p-1.5 rounded-full shadow-2xl flex items-center justify-center border-2 relative z-10 transition-all ${
               isDark
-                ? 'bg-gradient-to-br from-cyan-500/20 to-indigo-600/30 border-cyan-400/40 text-cyan-300 shadow-cyan-900/40'
-                : 'bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-100 border-amber-300/80 text-amber-600 shadow-amber-200/60'
+                ? 'bg-slate-800/95 border-emerald-400/50 shadow-emerald-950/60'
+                : 'bg-white border-emerald-400/80 shadow-emerald-200/80'
             }`}
           >
-            <Bot size={44} className="drop-shadow-md" />
+            <img
+              src="/logo-lch.png"
+              alt="Logo Trường Tiểu học Lý Cảnh Hớn"
+              className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full select-none pointer-events-none drop-shadow-md"
+              loading="eager"
+            />
           </motion.div>
         </div>
       </div>

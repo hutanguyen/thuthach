@@ -50,10 +50,14 @@ export const AdminLogin: React.FC<Props> = ({ onLoginSuccess, onBack, theme = 'l
       </button>
 
       <div className="flex justify-center mb-3">
-        <div className={`p-4 rounded-3xl shadow-inner ${
-          isDark ? 'bg-cyan-950/80 text-cyan-400 border border-cyan-800' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+        <div className={`p-2 rounded-full shadow-lg border-2 ${
+          isDark ? 'bg-slate-800/90 border-cyan-700/60' : 'bg-white border-emerald-300'
         }`}>
-          <ShieldCheck size={42} />
+          <img
+            src="/logo-lch.png"
+            alt="Logo Trường Tiểu học Lý Cảnh Hớn"
+            className="w-16 h-16 object-contain rounded-full drop-shadow-sm select-none"
+          />
         </div>
       </div>
 

@@ -108,11 +108,11 @@ export const AdminPortal: React.FC<Props> = ({
           <div className="flex flex-col items-start gap-2">
             {/* Chữ "Quản Trị Hệ Thống" */}
             <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-2xl flex items-center justify-center ${
-                isDark ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-              }`}>
-                <ShieldCheck size={22} />
-              </div>
+              <img
+                src="/logo-lch.png"
+                alt="Logo Trường Tiểu học Lý Cảnh Hớn"
+                className="w-8 h-8 rounded-full object-contain shadow-sm border border-emerald-300 dark:border-cyan-700 select-none"
+              />
               <h2 className="text-xl font-black tracking-tight">Quản Trị Hệ Thống</h2>
             </div>
 
