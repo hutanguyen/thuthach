@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Kiểu chữ nổi 2 lớp màu xanh lá bình thường (2-Layer Embossed Green) */
+  .green-title-font {
+    font-family: 'Fredoka', 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* Lớp 1 (dưới): Khối nổi 2 lớp màu xanh lá đậm */
+  .green-title-layer-bottom {
+    color: #047857;
+    text-shadow:
+      0 1px 0 #064e3b,
+      0 2px 0 #064e3b,
+      0 3px 0 #022c22,
+      0 4px 6px rgba(6, 78, 59, 0.35);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .green-title-layer-bottom-dark {
+    color: #064e3b;
+    text-shadow:
+      0 1px 0 #022c22,
+      0 2px 0 #022c22,
+      0 3px 0 #011812,
+      0 4px 8px rgba(16, 185, 129, 0.3);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Lớp 2 (trên): Thân chữ màu xanh lá tươi sáng nổi lên phía trước */
+  .green-title-layer-top {
+    background: linear-gradient(180deg, #34d399 0%, #10b981 45%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.6));
+  }
+
+  .green-title-layer-top-dark {
+    background: linear-gradient(180deg, #6ee7b7 0%, #34d399 45%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(167, 243, 208, 0.4));
+  }
+
+  /* Kiểu chữ PIXAR 3D Trắng - Khối đế Cam Nổi Bật (chuẩn hình mẫu Pixar TextStudio) */
+  .pixar-logo-font {
+    font-family: 'Montserrat', 'Fredoka', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* Khối đế 3D màu vàng cam dày nổi khối phía sau */
+  .pixar-orange-back {
+    color: #f59e0b;
+    -webkit-text-stroke: 13px #f59e0b;
+    paint-order: stroke fill;
+    filter: drop-shadow(0 2px 0 #d97706)
+            drop-shadow(0 4px 0 #b45309)
+            drop-shadow(0 7px 0 #92400e)
+            drop-shadow(0 10px 0 #78350f)
+            drop-shadow(0 14px 22px rgba(0, 0, 0, 0.42));
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Chữ màu trắng nổi khối 3D phía trước với viền vát sáng sắc nét */
+  .pixar-white-front {
+    background: linear-gradient(180deg, #ffffff 0%, #ffffff 55%, #f8fafc 80%, #e2e8f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.2px #f1f5f9;
+    filter: drop-shadow(0 1.5px 0 #e2e8f0)
+            drop-shadow(0 3px 0 #cbd5e1)
+            drop-shadow(0 4.5px 0 #94a3b8);
+  }
+
+  /* Kiểu chữ phồng bóng 3D xanh lá cây kiểu "hola" */
+  .hola-bubble-font {
+    font-family: 'Fredoka', 'Baloo 2', 'Comfortaa', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  /* Lớp vỏ ngoài 3D phồng tròn dày màu xanh lá đậm (như viền đỏ của "hola") */
+  .hola-bubble-back {
+    color: #047857;
+    -webkit-text-stroke: 10px #047857;
+    paint-order: stroke fill;
+    filter: drop-shadow(0 3px 0 #064e3b)
+            drop-shadow(0 6px 0 #022c22)
+            drop-shadow(0 10px 14px rgba(2, 44, 34, 0.45));
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .hola-bubble-back-dark {
+    color: #065f46;
+    -webkit-text-stroke: 10px #065f46;
+    paint-order: stroke fill;
+    filter: drop-shadow(0 3px 0 #022c22)
+            drop-shadow(0 6px 0 #011b14)
+            drop-shadow(0 0 20px rgba(52, 211, 153, 0.45));
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Thân chữ phồng bóng màu xanh lá cây sáng bóng (như lõi vàng của "hola") */
+  .hola-bubble-front {
+    background: linear-gradient(180deg, #ecfdf5 0%, #bbf7d0 16%, #4ade80 36%, #22c55e 65%, #16a34a 90%, #15803d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.6px #065f46;
+    filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.7));
+  }
+
+  .hola-bubble-front-dark {
+    background: linear-gradient(180deg, #f0fdf4 0%, #bbf7d0 20%, #6ee7b7 40%, #34d399 70%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.6px #064e3b;
+    filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.8));
+  }
+
+  /* 3D Pixar Title Style - Màu Đỏ Rực Rỡ Nổi Bật */
+  .pixar-title-3d {
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: linear-gradient(180deg, #FEE2E2 0%, #F87171 28%, #DC2626 65%, #991B1B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 0 #ffffff)
+            drop-shadow(0 4px 0 #b91c1c)
+            drop-shadow(0 6px 0 #7f1d1d)
+            drop-shadow(0 8px 0 #450a0a)
+            drop-shadow(0 10px 18px rgba(185, 28, 28, 0.4));
+    transform: perspective(600px) rotateX(8deg);
+  }
+
+  .pixar-title-3d-dark {
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: linear-gradient(180deg, #FEF2F2 0%, #FCA5A5 25%, #EF4444 60%, #DC2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 0 #b91c1c)
+            drop-shadow(0 4px 0 #991b1b)
+            drop-shadow(0 6px 0 #450a0a)
+            drop-shadow(0 0 24px rgba(239, 68, 68, 0.75));
+    transform: perspective(600px) rotateX(8deg);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(3deg); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(7px) rotate(-3deg); }
+}
+
+.animate-float {
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 4.5s ease-in-out infinite;
+}

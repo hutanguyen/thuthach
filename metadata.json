@@ -1,0 +1,6 @@
+{
+  "name": "Hệ Thống Ôn Tập Trắc Nghiệm Thông Minh",
+  "description": "Ứng dụng ôn tập kiến thức 20 câu hỏi trắc nghiệm với giao diện thân thiện, báo điểm ngay lập tức và tính năng tổng hợp, xuất kết quả ra file Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
