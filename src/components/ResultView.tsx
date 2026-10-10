@@ -1,18 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Trophy, User, GraduationCap, FileSpreadsheet, RefreshCcw, Award, Hash, Star, Timer, Clock } from 'lucide-react';
-import { StudentResult } from '../types';
-import { exportSingleResultToExcel } from '../utils/excelExport';
+import { Trophy, User, GraduationCap, FileText, RefreshCcw, Award, Hash, Star, Timer, Clock } from 'lucide-react';
+import { StudentResult, Question } from '../types';
 import { fireCelebrationConfetti } from '../utils/confetti';
 import { soundEngine } from '../utils/soundEngine';
+import { SubmissionDetailModal } from './SubmissionDetailModal';
 
 interface Props {
   result: StudentResult;
+  questions?: Question[];
   onRestart: () => void;
   theme?: 'light' | 'dark';
 }
 
-export const ResultView: React.FC<Props> = ({ result, onRestart, theme = 'light' }) => {
+export const ResultView: React.FC<Props> = ({ result, questions = [], onRestart, theme = 'light' }) => {
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const isDark = theme === 'dark';
   const isOther = result.participantType === 'other' || (!result.studentCode && (result.studentClass === 'Khác' || !result.studentClass));
 
@@ -22,12 +24,9 @@ export const ResultView: React.FC<Props> = ({ result, onRestart, theme = 'light'
     soundEngine.playVictoryFanfare();
   }, []);
 
-  const handleExportExcel = () => {
-    exportSingleResultToExcel(result);
-  };
-
   return (
-    <motion.div
+    <>
+      <motion.div
       key="result"
       initial={{ opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -237,11 +236,12 @@ export const ResultView: React.FC<Props> = ({ result, onRestart, theme = 'light'
         <div className="space-y-3 pt-2">
           <button
             type="button"
-            onClick={handleExportExcel}
-            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-black transition-all shadow-lg shadow-emerald-400/30 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer border-b-2 border-emerald-700 active:border-b-0"
+            onClick={() => setShowSubmissionModal(true)}
+            className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer border-b-2 border-indigo-800 active:border-b-0"
+            title="Xem chi tiết toàn bộ bài làm và tải file PDF"
           >
-            <FileSpreadsheet size={20} />
-            <span>Xuất kết quả bài làm ra file Excel (.xlsx)</span>
+            <FileText size={20} />
+            <span>Xem bài làm</span>
           </button>
 
           <button
@@ -259,5 +259,16 @@ export const ResultView: React.FC<Props> = ({ result, onRestart, theme = 'light'
         </div>
       </div>
     </motion.div>
-  );
+
+    {/* Modal Xem bài làm & Tải file PDF */}
+    {showSubmissionModal && (
+      <SubmissionDetailModal
+        result={result}
+        questions={questions}
+        onClose={() => setShowSubmissionModal(false)}
+        theme={theme}
+      />
+    )}
+  </>
+);
 };

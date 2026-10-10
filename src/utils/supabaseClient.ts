@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.player_logins (
   logged_in_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Bảng 2: Lưu kết quả sau khi hoàn thành thử thách (Bảng tổng hợp)
+-- Bảng 2: Lưu kết quả sau khi hoàn thành thử thách (Bảng tổng hợp & Chi tiết bài làm)
 CREATE TABLE IF NOT EXISTS public.student_results (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -41,10 +41,14 @@ CREATE TABLE IF NOT EXISTS public.student_results (
   evaluation TEXT,
   submitted_at TEXT,
   answers JSONB,
+  quiz_details JSONB,
   time_spent TEXT,
   auto_submitted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Bổ sung cột quiz_details nếu bảng đã tồn tại từ trước
+ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS quiz_details JSONB;
 
 -- Bật RLS và phân quyền cho Public / Anon key
 ALTER TABLE public.player_logins ENABLE ROW LEVEL SECURITY;
@@ -103,11 +107,22 @@ export async function savePlayerLoginToSupabase(studentInfo: StudentInfo): Promi
 }
 
 /**
- * Lưu kết quả sau khi hoàn thành bài thi vào Supabase
+ * Lưu kết quả sau khi hoàn thành bài thi vào Supabase kèm chi tiết bài làm
  */
 export async function saveStudentResultToSupabase(result: StudentResult): Promise<{ success: boolean; error?: string }> {
   try {
-    const payload = {
+    const cleanAnswers: Record<string, any> = {};
+    Object.entries(result.answers || {}).forEach(([k, v]) => {
+      if (k !== '_quiz_details') cleanAnswers[k] = v;
+    });
+
+    const answersPayload = {
+      ...cleanAnswers,
+      ...(result.quizDetails && result.quizDetails.length > 0 ? { _quiz_details: result.quizDetails } : {}),
+    };
+
+    // Payload 1: Thử có quiz_details column (nếu bảng đã có cột quiz_details)
+    const payloadWithColumn = {
       id: result.id,
       name: result.name,
       student_code: result.studentCode || '',
@@ -118,16 +133,43 @@ export async function saveStudentResultToSupabase(result: StudentResult): Promis
       percentage: result.percentage,
       evaluation: result.evaluation || '',
       submitted_at: result.submittedAt,
-      answers: result.answers || {},
+      answers: answersPayload,
+      quiz_details: result.quizDetails || [],
       time_spent: result.timeSpentFormatted || null,
       auto_submitted: !!result.autoSubmitted,
       created_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('student_results').insert([payload]);
+    const { error: errCol } = await supabase.from('student_results').insert([payloadWithColumn]);
 
-    if (error) {
-      console.warn('Lưu kết quả vào Supabase (thử snake_case):', error.message);
+    if (!errCol) {
+      return { success: true };
+    }
+
+    console.warn('Thử lưu kèm cột quiz_details không thành công (có thể chưa tạo cột):', errCol.message);
+
+    // Payload 2: Fallback không có cột quiz_details (chi tiết bài làm được lưu an toàn trong cột answers JSONB)
+    const payloadFallback = {
+      id: result.id,
+      name: result.name,
+      student_code: result.studentCode || '',
+      student_class: result.studentClass || '',
+      participant_type: result.participantType || 'student',
+      score: result.score,
+      total: result.total,
+      percentage: result.percentage,
+      evaluation: result.evaluation || '',
+      submitted_at: result.submittedAt,
+      answers: answersPayload,
+      time_spent: result.timeSpentFormatted || null,
+      auto_submitted: !!result.autoSubmitted,
+      created_at: new Date().toISOString(),
+    };
+
+    const { error: errFallback } = await supabase.from('student_results').insert([payloadFallback]);
+
+    if (errFallback) {
+      console.warn('Lưu kết quả vào Supabase (thử snake_case):', errFallback.message);
       // Thử fallback camelCase
       const camelPayload = {
         id: result.id,
@@ -140,14 +182,14 @@ export async function saveStudentResultToSupabase(result: StudentResult): Promis
         percentage: result.percentage,
         evaluation: result.evaluation || '',
         submittedAt: result.submittedAt,
-        answers: result.answers || {},
+        answers: answersPayload,
         timeSpentFormatted: result.timeSpentFormatted || null,
         autoSubmitted: !!result.autoSubmitted,
       };
-      const { error: err2 } = await supabase.from('student_results').insert([camelPayload]);
-      if (err2) {
-        console.warn('Lưu kết quả lên Supabase không thành công:', err2.message);
-        return { success: false, error: err2.message };
+      const { error: errCamel } = await supabase.from('student_results').insert([camelPayload]);
+      if (errCamel) {
+        console.warn('Lưu kết quả lên Supabase không thành công:', errCamel.message);
+        return { success: false, error: errCamel.message };
       }
     }
 
@@ -177,22 +219,31 @@ export async function fetchStudentResultsFromSupabase(): Promise<{ results: Stud
       return { results: [] };
     }
 
-    // Chuẩn hóa dữ liệu về đúng kiểu StudentResult
-    const normalized: StudentResult[] = data.map((row: any) => ({
-      id: String(row.id || `${Date.now()}`),
-      name: String(row.name || ''),
-      studentCode: String(row.student_code ?? row.studentCode ?? ''),
-      studentClass: String(row.student_class ?? row.studentClass ?? ''),
-      participantType: (row.participant_type ?? row.participantType) === 'other' ? 'other' : 'student',
-      score: Number(row.score ?? 0),
-      total: Number(row.total ?? 0),
-      percentage: Number(row.percentage ?? 0),
-      evaluation: String(row.evaluation ?? ''),
-      submittedAt: String(row.submitted_at ?? row.submittedAt ?? ''),
-      answers: typeof row.answers === 'object' && row.answers !== null ? row.answers : {},
-      autoSubmitted: Boolean(row.auto_submitted ?? row.autoSubmitted),
-      timeSpentFormatted: row.time_spent ?? row.timeSpentFormatted ?? row.time_spent_formatted ?? undefined,
-    }));
+    // Chuẩn hóa dữ liệu về đúng kiểu StudentResult kèm quizDetails
+    const normalized: StudentResult[] = data.map((row: any) => {
+      const rawAnswers = typeof row.answers === 'object' && row.answers !== null ? { ...row.answers } : {};
+      const rawDetails = row.quiz_details ?? row.quizDetails ?? rawAnswers._quiz_details ?? undefined;
+      if (rawAnswers._quiz_details) {
+        delete rawAnswers._quiz_details;
+      }
+
+      return {
+        id: String(row.id || `${Date.now()}`),
+        name: String(row.name || ''),
+        studentCode: String(row.student_code ?? row.studentCode ?? ''),
+        studentClass: String(row.student_class ?? row.studentClass ?? ''),
+        participantType: (row.participant_type ?? row.participantType) === 'other' ? 'other' : 'student',
+        score: Number(row.score ?? 0),
+        total: Number(row.total ?? 0),
+        percentage: Number(row.percentage ?? 0),
+        evaluation: String(row.evaluation ?? ''),
+        submittedAt: String(row.submitted_at ?? row.submittedAt ?? ''),
+        answers: rawAnswers,
+        quizDetails: Array.isArray(rawDetails) ? rawDetails : undefined,
+        autoSubmitted: Boolean(row.auto_submitted ?? row.autoSubmitted),
+        timeSpentFormatted: row.time_spent ?? row.timeSpentFormatted ?? row.time_spent_formatted ?? undefined,
+      };
+    });
 
     return { results: normalized };
   } catch (err: any) {

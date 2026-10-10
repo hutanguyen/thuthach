@@ -14,6 +14,17 @@ export interface StudentInfo {
   participantType?: 'student' | 'other';
 }
 
+export interface QuizQuestionDetail {
+  id: number;
+  question: string;
+  imageUrl?: string;
+  options: string[];
+  optionImages?: (string | undefined)[];
+  correctAnswer: number;
+  selectedAnswer: number; // 0..3 or -1 if unselected
+  isCorrect: boolean;
+}
+
 export interface StudentResult {
   id: string;
   studentCode: string;
@@ -28,6 +39,7 @@ export interface StudentResult {
   answers: Record<number, number>;
   timeSpentFormatted?: string;
   autoSubmitted?: boolean;
+  quizDetails?: QuizQuestionDetail[];
 }
 
 export interface QuizTimerConfig {

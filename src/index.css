@@ -181,3 +181,82 @@
 .animate-float-reverse {
   animation: float-reverse 4.5s ease-in-out infinite;
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ẩn hoàn toàn tất cả các phần tử trên toàn bộ giao diện */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Ẩn triệt để các phần tử đánh dấu print:hidden, modal backdrop, thanh cuộn */
+  .print\:hidden,
+  button,
+  nav,
+  header,
+  footer,
+  aside {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Chỉ cô lập duy nhất vùng Phiếu kết quả bài làm (#printable-submission-sheet) */
+  #printable-submission-sheet,
+  #printable-submission-sheet * {
+    visibility: visible !important;
+  }
+
+  #printable-submission-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 4mm 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    display: block !important;
+  }
+
+  /* Chống ngắt trang giữa chừng khi in câu hỏi */
+  .break-inside-avoid,
+  .print\:break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Đảm bảo hình ảnh bài làm rõ nét khi in */
+  #printable-submission-sheet img {
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

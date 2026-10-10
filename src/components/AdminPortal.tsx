@@ -198,6 +198,7 @@ export const AdminPortal: React.FC<Props> = ({
         ) : (
           <SummaryDashboard
             results={results}
+            questions={questions}
             onBack={onBackToApp}
             onClearAll={onClearAllResults}
             onDeleteSingle={onDeleteSingleResult}

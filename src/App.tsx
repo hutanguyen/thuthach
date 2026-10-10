@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AlertCircle } from 'lucide-react';
 import { QUIZ_QUESTIONS } from './constants';
-import { StudentInfo, StudentResult, AppState, Question, QuizTimerConfig } from './types';
+import { StudentInfo, StudentResult, AppState, Question, QuizTimerConfig, QuizQuestionDetail } from './types';
 import { getEvaluationText } from './utils/excelExport';
 import { saveQuestionsToStorage, loadQuestionsFromStorage } from './utils/questionStorage';
 import { loadTimerConfig, saveTimerConfig } from './utils/timerStorage';
@@ -21,8 +21,14 @@ import {
   deleteStudentResultFromSupabase, 
   clearAllStudentResultsFromSupabase 
 } from './utils/supabaseClient';
+import { 
+  saveResultsToStorage, 
+  loadResultsFromStorage, 
+  clearResultsFromStorage, 
+  RESULTS_STORAGE_KEY 
+} from './utils/resultsStorage';
 
-const STORAGE_KEY = 'quiz_student_results';
+const STORAGE_KEY = RESULTS_STORAGE_KEY;
 const QUESTIONS_STORAGE_KEY = 'quiz_custom_questions';
 const ADMIN_SESSION_KEY = 'quiz_admin_session';
 const THEME_STORAGE_KEY = 'quiz_theme_mode';
@@ -114,7 +120,7 @@ export default function App() {
         sessionStorage.removeItem(ADMIN_SESSION_KEY);
       }
     } catch (e) {
-      console.error('Lỗi lưu phiên làm việc:', e);
+      console.warn('Lỗi lưu phiên làm việc:', e);
     }
   }, [isAdminAuthenticated]);
 
@@ -125,24 +131,47 @@ export default function App() {
         setQuestions(loaded);
       }
     }).catch(err => {
-      console.error('Lỗi nạp câu hỏi từ storage:', err);
+      console.warn('Lỗi nạp câu hỏi từ storage:', err);
     });
   }, []);
 
   // Sync questions to persistent storage (IndexedDB + localStorage)
   useEffect(() => {
     saveQuestionsToStorage(questions).catch(e => {
-      console.error('Lỗi lưu câu hỏi:', e);
+      console.warn('Lỗi lưu câu hỏi:', e);
     });
   }, [questions]);
 
-  // Sync results to localStorage
+  // Load results from IndexedDB (contains full quizDetails)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
-    } catch (e) {
-      console.error('Lỗi lưu kết quả:', e);
-    }
+    loadResultsFromStorage().then(loaded => {
+      if (Array.isArray(loaded) && loaded.length > 0) {
+        setResults(prev => {
+          const prevMap = new Map<string, StudentResult>(prev.map(p => [p.id, p]));
+          const combined = [...prev];
+          loaded.forEach(l => {
+            if (!prevMap.has(l.id)) {
+              combined.push(l);
+            } else if (l.quizDetails && !prevMap.get(l.id)?.quizDetails) {
+              const idx = combined.findIndex(c => c.id === l.id);
+              if (idx !== -1) {
+                combined[idx] = { ...combined[idx], quizDetails: l.quizDetails };
+              }
+            }
+          });
+          return combined;
+        });
+      }
+    }).catch(err => {
+      console.warn('Lỗi nạp kết quả từ storage:', err);
+    });
+  }, []);
+
+  // Sync results safely to persistent storage (IndexedDB + lightweight localStorage)
+  useEffect(() => {
+    saveResultsToStorage(results).catch(e => {
+      console.warn('Lỗi lưu kết quả vào bộ nhớ máy:', e);
+    });
   }, [results]);
 
   const toggleTheme = () => {
@@ -203,6 +232,20 @@ export default function App() {
       timeSpentFormatted = m > 0 ? `${m} phút ${s} giây` : `${s} giây`;
     }
 
+    const quizDetails: QuizQuestionDetail[] = questions.map(q => {
+      const selectedAnswer = answers[q.id] !== undefined ? answers[q.id] : -1;
+      return {
+        id: q.id,
+        question: q.question,
+        imageUrl: q.imageUrl,
+        options: q.options,
+        optionImages: q.optionImages,
+        correctAnswer: q.correctAnswer,
+        selectedAnswer,
+        isCorrect: selectedAnswer === q.correctAnswer,
+      };
+    });
+
     const newResult: StudentResult = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       participantType: isOtherType ? 'other' : 'student',
@@ -217,6 +260,7 @@ export default function App() {
       answers,
       autoSubmitted: isAutoSubmitted,
       timeSpentFormatted,
+      quizDetails,
     };
 
     setResults(prev => [newResult, ...prev]);
@@ -256,13 +300,17 @@ export default function App() {
 
   const handleClearAllResults = () => {
     setResults([]);
-    localStorage.removeItem(STORAGE_KEY);
-    clearAllStudentResultsFromSupabase().catch(console.error);
+    clearResultsFromStorage().catch(() => {});
+    clearAllStudentResultsFromSupabase().catch(err => {
+      console.warn('Lỗi xóa kết quả trên Supabase:', err);
+    });
   };
 
   const handleDeleteSingleResult = (id: string) => {
     setResults(prev => prev.filter(item => item.id !== id));
-    deleteStudentResultFromSupabase(id).catch(console.error);
+    deleteStudentResultFromSupabase(id).catch(err => {
+      console.warn('Lỗi xóa 1 kết quả trên Supabase:', err);
+    });
   };
 
   const handleRestart = () => {
@@ -374,6 +422,7 @@ export default function App() {
         {state === 'result' && currentResult && (
           <ResultView
             result={currentResult}
+            questions={questions}
             onRestart={handleRestart}
             theme={theme}
           />

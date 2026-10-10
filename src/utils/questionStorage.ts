@@ -3,7 +3,7 @@ import { QUIZ_QUESTIONS } from '../constants';
 
 const DB_NAME = 'QuizAppletDB';
 const STORE_NAME = 'questions_store';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const LOCAL_STORAGE_KEY = 'quiz_custom_questions';
 
 const openDB = (): Promise<IDBDatabase> => {
@@ -17,6 +17,9 @@ const openDB = (): Promise<IDBDatabase> => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains('results_store')) {
+        db.createObjectStore('results_store');
       }
     };
     request.onsuccess = () => resolve(request.result);
